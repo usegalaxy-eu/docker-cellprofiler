@@ -1,5 +1,7 @@
 #!/bin/sh -f
 
-. /opt/bellavista/bellavista/bin/activate
-
-bellavista "/input/config.json"
+if [ ! -e /bin/cellprofiler_galaxy ]; then    
+   /opt/conda/envs/cellprofiler/bin/cellprofiler
+else    
+   cellprofiler_galaxy
+fi

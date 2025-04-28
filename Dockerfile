@@ -1,63 +1,62 @@
-FROM jlesage/baseimage-gui:ubuntu-22.04-v4.4.2 AS build
+FROM jlesage/baseimage-gui:ubuntu-22.04-v4.7.1 AS build
 
-LABEL maintainer="Amirhossein N. Nilchi <nilchia@informatik.uni-freiburg.de>"
+ENV DEBIAN_FRONTEND=noninteractive
 
-RUN apt-get update -y && \
-    apt-get dist-upgrade -y && \
-    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
-        bzip2 \
-        ca-certificates \
-        libgl1 \
-        qt5dxcb-plugin \
-        libxcb-xinerama0 \
-        libxcb-icccm4 \
-        libxcb-image0 \
-        libxcb-keysyms1 \
-        libxcb-randr0 \
-        libxcb-render-util0 \
-        libxcb-xkb1 \
-        libxkbcommon-x11-0 \
-        python3 \
-        python3-pip \
-        python3-venv \
-        wget && \
-    rm -rf /var/lib/apt/lists/*
+ENV LANG=en_US.UTF-8 \
+    LANGUAGE=en_US:en \
+    LC_ALL=en_US.UTF-8
 
-ARG VERSION=0.0.2
+ENV JAVA_HOME=/usr/lib/jvm/java-11-openjdk-amd64
+ENV CONDA_BIN_PATH="/opt/conda/bin"
+ENV PATH=$CONDA_BIN_PATH:"/opt/conda/envs/cellprofiler/bin":$PATH
+ENV LD_PRELOAD="/usr/lib/x86_64-linux-gnu/libstdc++.so.6"
+ENV MPLCONFIGDIR="/tmp"
 
-RUN mkdir -p /opt/bellavista &&\
-    chmod 777 /opt/bellavista &&\
-    cd /opt/bellavista/ && \
-    wget -q https://pypi.org/packages/source/b/bellavista/bellavista-$VERSION.tar.gz &&\
-    python3 -m venv bellavista && \
-    chmod -R 755 bellavista/bin && \
-    chmod +x bellavista/bin/activate && \
-    . bellavista/bin/activate && \
-    pip install bellavista-0.0.2.tar.gz && \
-    rm bellavista-$VERSION.tar.gz
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends locales \
+ && sed -i 's/^# *\(en_US.UTF-8 UTF-8\)/\1/' /etc/locale.gen \
+ && locale-gen \
+ && update-locale LANG=en_US.UTF-8 \
+ && rm -rf /var/lib/apt/lists/*
 
-# Generate and install favicons.
-RUN APP_ICON_URL=https://bellavista.readthedocs.io/en/latest/_static/bellavista_logo_favicon.png && \
-    install_app_icon.sh "$APP_ICON_URL"
+RUN apt-get update && apt-get upgrade -y && apt-get install -y make gcc build-essential libgtk-3-dev gnome-icon-theme hicolor-icon-theme gnome-themes-standard
 
-# Set up Python virtual environment as default
-ENV PATH="/opt/bellavista/bellavista/bin:$PATH"
-ENV VIRTUAL_ENV="/opt/bellavista/bellavista"
+RUN apt-get install -y --no-install-recommends tzdata apt-utils wget unzip python-is-python3 python3-pip openjdk-11-jdk-headless default-libmysqlclient-dev git libnotify-dev libsdl2-dev && \
+    apt-get install -y \
+          freeglut3 \
+          freeglut3-dev \
+          libgl1-mesa-dev \
+          libglu1-mesa-dev \
+          libgstreamer-plugins-base1.0-dev \
+          libgtk-3-dev \
+          libjpeg-dev \
+          libnotify-dev \
+          libsdl2-dev \
+          libsm-dev \
+          libtiff-dev \
+          libwebkit2gtk-4.0-dev \
+          libxtst-dev && \
+    apt-get clean && \ 
+    echo 'debconf debconf/frontend select Noninteractive' | debconf-set-selections
 
-# Add virtual environment activation to startup
-RUN echo '. /opt/bellavista/bellavista/bin/activate' >> /etc/cont-init.d/50-bellavista-setup.sh && \
-    chmod +x /etc/cont-init.d/50-bellavista-setup.sh
+WORKDIR /tmp
+RUN wget https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-x86_64.sh \
+    && bash Miniforge3-Linux-x86_64.sh -b -p /opt/conda \
+    && rm -f Miniforge3-Linux-x86_64.sh 
+
+RUN conda create -y --name cellprofiler python=3.8 numpy==1.24.4 matplotlib pandas mysqlclient=1.4.6 sentry-sdk=0.18.0 openjdk scikit-learn mahotas gtk2 Jinja2=3.0.1 wxpython=4.1.0 -c conda-forge -c bioconda && \
+    conda run --name cellprofiler python -m pip install cellprofiler
 
 EXPOSE 5800
 
 COPY startapp.sh /startapp.sh
 RUN chmod +x /startapp.sh
 
-ENV APP_COMMAND=/startapp.sh
+ENV APP_NAME="CellProfiler"
 
-# Set the name of the application.
-ENV APP_NAME="bellavista"
-ENV DISPLAY=:0
-ENV QT_DEBUG_PLUGINS=1
-ENV KEEP_APP_RUNNING=1
+
 ENV TAKE_CONFIG_OWNERSHIP=1
+
+COPY rc.xml.template /opt/base/etc/openbox/rc.xml.template
+
+WORKDIR /config

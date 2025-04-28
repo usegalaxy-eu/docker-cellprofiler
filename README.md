@@ -1,16 +1,16 @@
-[![Docker Repository on Quay](https://quay.io/repository/bgruening/bellavista/status "Docker Repository on Quay")](https://quay.io/repository/bgruening/bellavista)
+[![Docker Repository on Quay](https://quay.io/repository/bgruening/cellprofiler/status "Docker Repository on Quay")](https://quay.io/repository/bgruening/cellprofiler)
 
-# docker-bellavista
+# docker-cellprofiler
 
-Docker image with [bellavista](https://github.com/pkosurilab/BellaVista) version 0.0.2
+Docker image with [cellprofiler](https://github.com/CellProfiler) version 4.2.8 
 
 ## How to build the container
 
 To build this container you can use the following command:
 
 ```bash
-git clone https://github.com/usegalaxy-eu/docker-bellavista.git
-cd docker-bellavista
+git clone https://github.com/usegalaxy-eu/docker-cellprofiler.git
+cd docker-cellprofiler
 docker build -t CONTAINER_NAME .
 ```
 
@@ -19,7 +19,7 @@ docker build -t CONTAINER_NAME .
 The container is stored on Quay.io and you can get it via:
 
 ```bash
-docker pull quay.io/bgruening/bellavista:latest
+docker pull quay.io/bgruening/cellprofiler:TAG_NAME
 ```
 
 ## How to use the container
